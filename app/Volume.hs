@@ -63,7 +63,7 @@ makeLenses ''Shapes
 
 data Voice = Voice
   { _voxPose        :: !(Pose GLfloat)
-  , _voxPoints      :: ![(V3 GLfloat)]
+  , _voxPoints      :: ![V4 GLfloat]
   , _voxActive      :: !Int
   }
 makeLenses ''Voice
@@ -108,11 +108,7 @@ data Uniforms = Uniforms
   , uInverseModel        :: UniformLocation (M44 GLfloat)
   , uModel               :: UniformLocation (M44 GLfloat)
   , uCamera              :: UniformLocation (V3  GLfloat)
-  , uRepelPosition       :: UniformLocation (V3  GLfloat)
-  , uStartPoint          :: UniformLocation (V3  GLfloat)
-  , uEndPoint            :: UniformLocation (V3  GLfloat)
-  , uRepelStrength       :: UniformLocation GLfloat
-  , uDiffuse             :: UniformLocation (V4  GLfloat)
+  , uPoints              :: UniformLocation [V4  GLfloat]
   , uTime                :: UniformLocation GLfloat
   } deriving (Data)
 
@@ -142,8 +138,8 @@ main = do
 
 
     -- Set up our marker resources
-  voiceProg   <- createShaderProgram "app/shaders/marker.vert" "app/shaders/marker.frag"
-  voiceGeo    <- planeGeometry ( V2 1 1 ) ( V3 0 0 (-1) ) ( V3 0 1 0 ) ( V2 2 10 )
+  voiceProg   <- createShaderProgram "app/shaders/voice.vert" "app/shaders/marker.frag"
+  voiceGeo    <- planeGeometry ( V2 1 1 ) ( V3 0 0 (-1) ) ( V3 0 1 0 ) ( V2 100 10 )
   voiceShape  <- makeShape voiceGeo voiceProg--markerGeo markerProg
 
 
@@ -186,8 +182,8 @@ main = do
                                       { _voxPose  = Pose { _posPosition    = getBasePoint (( fromIntegral i ) + 1) 
                                                          , _posOrientation = Quaternion 0 (V3 0 1 0)
                                                          }
-                                      , _voxPoints = flip map [-5..5] $ 
-                                                        \x -> getBasePoint ( x * ( fromIntegral i ) + 1)       
+                                      , _voxPoints = flip map [0..9] $ 
+                                                        \x -> getBasePoint4 ( x * ( fromIntegral i ) + 1)       
                                       , _voxActive = 1
                                       }
                                 in (i, something)
@@ -330,6 +326,7 @@ render shapes projection viewMat = do
 
       let model = mkTransformation (obj ^. voxPose . posOrientation) (obj ^. voxPose . posPosition)
 
+      uniformV4V uPoints ( obj ^. voxPoints )
       drawShape model projection viewMat voiceShape
 
 
@@ -370,6 +367,14 @@ getBasePoint i = position
         y = cos( i * 40 ) * 10
         z = sin( i * 100 ) * 4
         position = V3 x y z
+
+
+getBasePoint4 i = position
+
+  where x = sin( i * 10 ) * 2.2
+        y = cos( i * 40 ) * 2.5
+        z = sin( i * 100 ) * 2.0
+        position = V4 x y z i
 
 
 
