@@ -108,7 +108,17 @@ data Uniforms = Uniforms
   , uInverseModel        :: UniformLocation (M44 GLfloat)
   , uModel               :: UniformLocation (M44 GLfloat)
   , uCamera              :: UniformLocation (V3  GLfloat)
-  , uPoints              :: UniformLocation [V4  GLfloat]
+
+  -- once we've got updated gamepal
+  --, uPoints              :: UniformLocation [V4  GLfloat]
+  , uPoint1              :: UniformLocation (V4  GLfloat)
+  , uPoint2              :: UniformLocation (V4  GLfloat)
+  , uPoint3              :: UniformLocation (V4  GLfloat)
+  , uPoint4              :: UniformLocation (V4  GLfloat)
+  , uPoint5              :: UniformLocation (V4  GLfloat)
+  , uPoint6              :: UniformLocation (V4  GLfloat)
+  , uPoint7              :: UniformLocation (V4  GLfloat)
+  , uPoint8              :: UniformLocation (V4  GLfloat)
   , uTime                :: UniformLocation GLfloat
   } deriving (Data)
 
@@ -125,10 +135,14 @@ data Uniforms = Uniforms
 
 -}
 
+enableDevices :: [GamePalDevices]
+-- enableDevices = [UseOpenVR]
+enableDevices = [UseOpenVR, UseHydra]
+
 main :: IO ()
 main = do
 
-  gamePal@GamePal{..} <- reacquire 0 $ initGamePal "Volume" NoGCPerFrame []
+  gamePal@GamePal{..} <- reacquire 0 $ initGamePal "Volume" NoGCPerFrame enableDevices
 
 
   -- Set up our marker resources
@@ -138,8 +152,8 @@ main = do
 
 
     -- Set up our marker resources
-  voiceProg   <- createShaderProgram "app/shaders/voice.vert" "app/shaders/marker.frag"
-  voiceGeo    <- planeGeometry ( V2 1 1 ) ( V3 0 0 (-1) ) ( V3 0 1 0 ) ( V2 100 10 )
+  voiceProg   <- createShaderProgram "app/shaders/voice.vert" "app/shaders/voice.frag"
+  voiceGeo    <- planeGeometry ( V2 1 1 ) ( V3 0 0 (-1) ) ( V3 0 1 0 ) ( V2 100 100 )
   voiceShape  <- makeShape voiceGeo voiceProg--markerGeo markerProg
 
 
@@ -177,13 +191,13 @@ main = do
 
 
   let world = World 
-        { _wldVoices  = Map.fromList $ flip map [0..10] $ 
+        { _wldVoices  = Map.fromList $ flip map [0] $ 
                           \i -> let something = Voice 
-                                      { _voxPose  = Pose { _posPosition    = getBasePoint (( fromIntegral i ) + 1) 
+                                      { _voxPose  = Pose { _posPosition    = V3 0 0 0
                                                          , _posOrientation = Quaternion 0 (V3 0 1 0)
                                                          }
-                                      , _voxPoints = flip map [0..9] $ 
-                                                        \x -> getBasePoint4 ( x * ( fromIntegral i ) + 1)       
+                                      , _voxPoints = flip map [0..10] $ 
+                                                        \x -> getBasePoint4 ( x  )       
                                       , _voxActive = 1
                                       }
                                 in (i, something)
@@ -222,6 +236,26 @@ main = do
         z = cos( time * 4 ) * 5
 
     wldMarker .= newPose {_posPosition = V3 x y z }
+
+
+    {-
+
+      Updating the positions of the control points
+      of the voices, so we get some drift!
+  
+    -}
+      
+    -- time <- use wldTime
+    -- wldVoices . traverse . voxPoints . traverse . _x += ( sin time ) * 0.001
+    
+    {-voices <- use wldVoices
+    forM_ ( zip [0..] ( Map.toList voices ) ) $ \( i , (objID, obj) ) -> do
+
+      let voice = wldVoices . at objID . traverse
+      let points = ( obj ^. voxPoints )
+      forM_ ( zip [0..] ( points ) ) $ \( i , p ) -> do
+        ( voice .  points ) !! i .= 1-}
+
 
 
 
@@ -298,6 +332,21 @@ render shapes projection viewMat = do
 
     drawShape model projection viewMat markerShape
 
+    voices <- use wldVoices
+    forM_ ( zip [0..] ( Map.toList voices ) ) $ \( i , (objID, obj) ) -> do
+
+      let model = mkTransformation (obj ^. voxPose . posOrientation) (obj ^. voxPose . posPosition)
+          points = ( obj ^. voxPoints )
+
+
+      forM_ ( zip [0..] ( points ) ) $ \( i , p ) -> do
+        let model = mkTransformation ( Quaternion 0 (V3 0 1 0) ) (V3 (p ^. _x) (p ^. _y) (p ^. _z))
+
+        drawShape model projection viewMat markerShape
+
+
+
+
 
 
 
@@ -325,8 +374,20 @@ render shapes projection viewMat = do
     forM_ ( zip [0..] ( Map.toList voices ) ) $ \( i , (objID, obj) ) -> do
 
       let model = mkTransformation (obj ^. voxPose . posOrientation) (obj ^. voxPose . posPosition)
+          points = ( obj ^. voxPoints )
 
-      uniformV4V uPoints ( obj ^. voxPoints )
+      -- once we've got updated gamepal
+      -- uniformV4V uPoints points
+      uniformV4 uPoint1 ( ( obj ^. voxPoints ) !! 0 ) 
+      uniformV4 uPoint2 ( ( obj ^. voxPoints ) !! 1 ) 
+      uniformV4 uPoint3 ( ( obj ^. voxPoints ) !! 2 ) 
+      uniformV4 uPoint4 ( ( obj ^. voxPoints ) !! 3 )
+      uniformV4 uPoint5 ( ( obj ^. voxPoints ) !! 4 )
+      uniformV4 uPoint6 ( ( obj ^. voxPoints ) !! 5 )
+      uniformV4 uPoint7 ( ( obj ^. voxPoints ) !! 6 )
+      uniformV4 uPoint8 ( ( obj ^. voxPoints ) !! 7 )
+
+
       drawShape model projection viewMat voiceShape
 
 
@@ -371,10 +432,10 @@ getBasePoint i = position
 
 getBasePoint4 i = position
 
-  where x = sin( i * 10 ) * 2.2
-        y = cos( i * 40 ) * 2.5
-        z = sin( i * 100 ) * 2.0
-        position = V4 x y z i
+  where x = sin(i * 0.6)
+        y = cos(i * 0.2)
+        z = sin(i * 0.3)
+        position = V4 x y z (i+1)
 
 
 
