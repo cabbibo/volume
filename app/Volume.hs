@@ -110,15 +110,15 @@ data Uniforms = Uniforms
   , uCamera              :: UniformLocation (V3  GLfloat)
 
   -- once we've got updated gamepal
-  --, uPoints              :: UniformLocation [V4  GLfloat]
-  , uPoint1              :: UniformLocation (V4  GLfloat)
+  , uPoints              :: UniformLocation [V4  GLfloat]
+  {-, uPoint1              :: UniformLocation (V4  GLfloat)
   , uPoint2              :: UniformLocation (V4  GLfloat)
   , uPoint3              :: UniformLocation (V4  GLfloat)
   , uPoint4              :: UniformLocation (V4  GLfloat)
   , uPoint5              :: UniformLocation (V4  GLfloat)
   , uPoint6              :: UniformLocation (V4  GLfloat)
   , uPoint7              :: UniformLocation (V4  GLfloat)
-  , uPoint8              :: UniformLocation (V4  GLfloat)
+  , uPoint8              :: UniformLocation (V4  GLfloat)-}
   , uTime                :: UniformLocation GLfloat
   } deriving (Data)
 
@@ -137,7 +137,8 @@ data Uniforms = Uniforms
 
 enableDevices :: [GamePalDevices]
 -- enableDevices = [UseOpenVR]
-enableDevices = [UseOpenVR, UseHydra]
+--enableDevices = [UseOpenVR, UseHydra]
+enableDevices = []
 
 main :: IO ()
 main = do
@@ -153,7 +154,7 @@ main = do
 
     -- Set up our marker resources
   voiceProg   <- createShaderProgram "app/shaders/voice.vert" "app/shaders/voice.frag"
-  voiceGeo    <- planeGeometry ( V2 1 1 ) ( V3 0 0 (-1) ) ( V3 0 1 0 ) ( V2 100 100 )
+  voiceGeo    <- planeGeometry ( V2 1 1 ) ( V3 0 0 (-1) ) ( V3 0 1 0 ) ( V2 100 10 )
   voiceShape  <- makeShape voiceGeo voiceProg--markerGeo markerProg
 
 
@@ -196,7 +197,7 @@ main = do
                                       { _voxPose  = Pose { _posPosition    = V3 0 0 0
                                                          , _posOrientation = Quaternion 0 (V3 0 1 0)
                                                          }
-                                      , _voxPoints = flip map [0..10] $ 
+                                      , _voxPoints = flip map [0..7] $ 
                                                         \x -> getBasePoint4 ( x  )       
                                       , _voxActive = 1
                                       }
@@ -258,6 +259,11 @@ main = do
 
 
 
+    wldVoices . imapped %@= \voiceID -> 
+      voxPoints . imapped %@~ \pointIndex -> do
+         _x +~ sin (fromIntegral pointIndex + time * 0.4) * cos (fromIntegral voiceID + time      ) * 0.03
+         _y +~ sin (fromIntegral pointIndex + time * 0.7) * cos (fromIntegral voiceID + time * 0.7) * 0.02
+         _z +~ sin (fromIntegral pointIndex + time * 3.0) * cos (fromIntegral voiceID + time * 0.4) * 0.03
 
     applyMouseLook gpWindow wldPlayer
     applyWASD gpWindow wldPlayer
@@ -377,15 +383,15 @@ render shapes projection viewMat = do
           points = ( obj ^. voxPoints )
 
       -- once we've got updated gamepal
-      -- uniformV4V uPoints points
-      uniformV4 uPoint1 ( ( obj ^. voxPoints ) !! 0 ) 
+      uniformV4V uPoints points
+      {-uniformV4 uPoint1 ( ( obj ^. voxPoints ) !! 0 ) 
       uniformV4 uPoint2 ( ( obj ^. voxPoints ) !! 1 ) 
       uniformV4 uPoint3 ( ( obj ^. voxPoints ) !! 2 ) 
       uniformV4 uPoint4 ( ( obj ^. voxPoints ) !! 3 )
       uniformV4 uPoint5 ( ( obj ^. voxPoints ) !! 4 )
       uniformV4 uPoint6 ( ( obj ^. voxPoints ) !! 5 )
       uniformV4 uPoint7 ( ( obj ^. voxPoints ) !! 6 )
-      uniformV4 uPoint8 ( ( obj ^. voxPoints ) !! 7 )
+      uniformV4 uPoint8 ( ( obj ^. voxPoints ) !! 7 )-}
 
 
       drawShape model projection viewMat voiceShape

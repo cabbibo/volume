@@ -1,14 +1,12 @@
 #version 330 core
 
+#define NUM_POINTS 8
+
+
 uniform vec3 uCamera;
-uniform vec4 uPoint1;
-uniform vec4 uPoint2;
-uniform vec4 uPoint3;
-uniform vec4 uPoint4;
-uniform vec4 uPoint5;
-uniform vec4 uPoint6;
-uniform vec4 uPoint7;
-uniform vec4 uPoint8;
+
+
+uniform vec4 uPoints[ NUM_POINTS ];
 
 
 in     vec3 vPosition;
@@ -24,9 +22,9 @@ in     float vLength;
 out     vec4 fragColor;
 
 
-const float MAX_TRACE_DISTANCE = 2.4;           // max trace distance
-const float INTERSECTION_PRECISION = 0.01;        // precision of the intersection
-const int NUM_OF_TRACE_STEPS = 100;
+const float MAX_TRACE_DISTANCE = 1.5;           // max trace distance
+const float INTERSECTION_PRECISION = 0.04;        // precision of the intersection
+const int NUM_OF_TRACE_STEPS = 10;
 
 
 vec3 hsv(float h, float s, float v){
@@ -116,9 +114,12 @@ vec2 map( vec3 pos ){
     vec2 res2;
 
     
-   	res2 = vec2( sdCapsule( pos , uPoint1.xyz , uPoint2.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
+    for( int i = 0; i < ( NUM_POINTS - 1 ); i++ ){
+   	  res2 = vec2( sdCapsule( pos , uPoints[i].xyz , uPoints[i+1].xyz , .1 ) , 2. );
+   	  res = smoothU( res , res2 , .1 );
 
+    }
+/*
    	res2 = vec2( sdCapsule( pos , uPoint2.xyz , uPoint3.xyz , .1 ) , 2. );
    	res = smoothU( res , res2 , .1 );
 
@@ -135,7 +136,7 @@ vec2 map( vec3 pos ){
    	res = smoothU( res , res2 , .1 );
 
    	res2 = vec2( sdCapsule( pos , uPoint7.xyz , uPoint8.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
+   	res = smoothU( res , res2 , .1 );*/
 
 
     return res;
@@ -190,7 +191,7 @@ void main() {
 
 
 
-	vec3 col = vec3( vUV.x , vUV.y , 1. );
+	vec3 col = vNormal * .5 + .5;
 
 	vec2 res = calcIntersection( ro , rd );
 
@@ -206,7 +207,7 @@ void main() {
 	vec4 volCol = volumeColor( ro , rd );
   
   	volCol.xyz *= col;
-    fragColor = vec4( col * volCol.w  , 1.);
+    fragColor = vec4( 1. - col  *pow( volCol.w , .3) , 1.);
 
 
 }

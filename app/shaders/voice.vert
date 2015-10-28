@@ -1,5 +1,6 @@
 #version 410 
 
+#define NUM_POINTS 8
 
 uniform mat4 uModel;
 uniform vec3 uCamera;
@@ -10,7 +11,7 @@ uniform vec3 uRepelPosition;
 uniform float uRepelStrength;
 uniform float uTime;
 
-//uniform vec4 uPoints[10];
+uniform vec4 uPoints[NUM_POINTS];
 uniform vec4 uPoint1;
 uniform vec4 uPoint2;
 uniform vec4 uPoint3;
@@ -39,7 +40,6 @@ out     float vLength;
 out     mat3 vINormMat;
 
 
-#define NUM_POINTS 8
 
 
 mat3 matInverse( mat3 m ){
@@ -100,7 +100,7 @@ vec3 cubicCurve( float t , vec3  c0 , vec3 c1 , vec3 c2 , vec3 c3 ){
 
 
 
-vec3 cubicFromValue( in float val , in vec3 points[NUM_POINTS] , out vec3 upPos , out vec3 doPos ){
+vec3 cubicFromValue( in float val , in vec4 points[NUM_POINTS] , out vec3 upPos , out vec3 doPos ){
 
 
   vec3 p0 = vec3(0.);
@@ -119,31 +119,31 @@ vec3 cubicFromValue( in float val , in vec3 points[NUM_POINTS] , out vec3 upPos 
 
   if( baseUp == 0. ){
 
-      p0 = points[ int( baseUp ) ];
-      p1 = points[ int( baseDown ) ];
-      p2 = points[ int( baseDown + 1. ) ];
+      p0 = points[ int( baseUp ) ].xyz;
+      p1 = points[ int( baseDown ) ].xyz;
+      p2 = points[ int( baseDown + 1. ) ].xyz;
 
 
       v1 = .5 * ( p2 - p0 );
 
   }else if( baseDown == float(NUM_POINTS-1) ){
 
-      p0 = points[ int( baseUp )   ];
-      p1 = points[ int( baseDown ) ];
-      p2 = points[ int( baseUp - 1. ) ];
+      p0 = points[ int( baseUp )   ].xyz;
+      p1 = points[ int( baseDown ) ].xyz;
+      p2 = points[ int( baseUp - 1. ) ].xyz;
 
       v0 = .5 * ( p1 - p2 );
 
   }else{
 
-      p0 = points[ int( baseUp ) ];
-      p1 = points[ int( baseDown ) ];
+      p0 = points[ int( baseUp ) ].xyz;
+      p1 = points[ int( baseDown ) ].xyz;
 
 
       vec3 pMinus;
 
-      pMinus = points[ int( baseUp - 1. ) ];
-      p2 = points[ int( baseDown + 1. ) ];
+      pMinus = points[ int( baseUp - 1. ) ].xyz;
+      p2 = points[ int( baseDown + 1. ) ].xyz;
 
       v1 = .5 * ( p2 - p0 );
       v0 = .5 * ( p1 - pMinus );
@@ -194,9 +194,10 @@ void main() {
 
 
 
-    vec3 points[NUM_POINTS] = vec3[]( uPoint1.xyz , uPoint2.xyz , uPoint3.xyz , uPoint4.xyz , uPoint5.xyz , uPoint6.xyz , uPoint7.xyz , uPoint8.xyz);
+    //vec3 points[NUM_POINTS] = vec3[]( uPoint1.xyz , uPoint2.xyz , uPoint3.xyz , uPoint4.xyz , uPoint5.xyz , uPoint6.xyz , uPoint7.xyz , uPoint8.xyz);
+    //vec4 points[NUM_POINTS] = vec4[]( uPoint1.xyz , uPoint2.xyz , uPoint3.xyz , uPoint4.xyz , uPoint5.xyz , uPoint6.xyz , uPoint7.xyz , uPoint8.xyz);
 
-    vec3 pos = cubicFromValue( val , points , upPos , doPos );
+    vec3 pos = cubicFromValue( val , uPoints , upPos , doPos );
     
 
     vec3 d1 = normalize( pos - upPos );
@@ -215,7 +216,7 @@ void main() {
 
     float angle = aPosition.y * 2. * 3.14159;
     float fall = (.5-abs( aUV.x - .5));
-    float radius = (abs(sin( uTime * .5  + aUV.x * 20.)) + 1.) *.2 * fall + .3 * pow( fall , .1);
+    float radius = (abs(sin( uTime * 1.5  + aUV.x * 20.)) + 1.) *.3 * fall + .3 * pow( fall , .3);
     //float radius =.2;
 
     vec3 fPos = pos + radius * curveX * sin( angle ) + radius * curveY * cos( angle );
@@ -223,7 +224,7 @@ void main() {
     //fPos = pos + vec3( 0., 1. * position.y , 0.);
 
     vec3 norm = normalize( fPos - pos );
-
+ 
     vPosition = fPos;
     vNormal = norm;
     vTang   = cross( norm , normalize( curveDir ));
