@@ -432,9 +432,9 @@ getBasePoint i = position
 
 getBasePoint4 i = position
 
-  where x = sin(i * 0.6)
-        y = cos(i * 0.2)
-        z = sin(i * 0.3)
+  where x = sin(i * 0.8) * 3
+        y = cos(i * 0.6) * 3 
+        z = sin(i * 0.5) * 2
         position = V4 x y z (i+1)
 
 

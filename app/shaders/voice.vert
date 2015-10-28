@@ -214,7 +214,8 @@ void main() {
   //  if(  left > 0.  ){ curveY *= -1.;  curveX *= -1.; }
 
     float angle = aPosition.y * 2. * 3.14159;
-    float radius = (abs(sin( uTime * .5  + aUV.x * 20.)) + 1.) *.3 *(.5-abs( aUV.x - .5));
+    float fall = (.5-abs( aUV.x - .5));
+    float radius = (abs(sin( uTime * .5  + aUV.x * 20.)) + 1.) *.2 * fall + .3 * pow( fall , .1);
     //float radius =.2;
 
     vec3 fPos = pos + radius * curveX * sin( angle ) + radius * curveY * cos( angle );

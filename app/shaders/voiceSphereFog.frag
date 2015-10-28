@@ -3,12 +3,6 @@
 uniform vec3 uCamera;
 uniform vec4 uPoint1;
 uniform vec4 uPoint2;
-uniform vec4 uPoint3;
-uniform vec4 uPoint4;
-uniform vec4 uPoint5;
-uniform vec4 uPoint6;
-uniform vec4 uPoint7;
-uniform vec4 uPoint8;
 
 
 in     vec3 vPosition;
@@ -24,7 +18,7 @@ in     float vLength;
 out     vec4 fragColor;
 
 
-const float MAX_TRACE_DISTANCE = 2.4;           // max trace distance
+const float MAX_TRACE_DISTANCE = .4;           // max trace distance
 const float INTERSECTION_PRECISION = 0.01;        // precision of the intersection
 const int NUM_OF_TRACE_STEPS = 100;
 
@@ -50,7 +44,7 @@ float noise( in vec3 x )
 }
 
 #define STEPS 10
-float stepDepth = .04;
+float stepDepth = .004;
 vec4 volumeColor( vec3 ro , vec3 rd ){
 
   vec3 col = vec3( 0. );
@@ -81,13 +75,6 @@ vec4 volumeColor( vec3 ro , vec3 rd ){
 }
 
 
-float sdCapsule( vec3 p, vec3 a, vec3 b, float r )
-{
-    vec3 pa = p - a, ba = b - a;
-    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-    return length( pa - ba*h ) - r;
-}
-
 float sdSphere( vec3 p, float s )
 {
   return length(p)-s;
@@ -99,45 +86,12 @@ float opRepSphere( vec3 p, vec3 c , float r)
     return sdSphere( q  , r );
 }
 
-vec2 smoothU( vec2 d1, vec2 d2, float k)
-{
-    float a = d1.x;
-    float b = d2.x;
-    float h = clamp(0.5+0.5*(b-a)/k, 0.0, 1.0);
-    return vec2( mix(b, a, h) - k*h*(1.0-h), mix(d2.y, d1.y, pow(h, 2.0)));
-}
-
 //--------------------------------
 // Modelling 
 //--------------------------------
 vec2 map( vec3 pos ){  
    
-    vec2 res =  vec2( 1000000. , -100. );
-    vec2 res2;
-
-    
-   	res2 = vec2( sdCapsule( pos , uPoint1.xyz , uPoint2.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-   	res2 = vec2( sdCapsule( pos , uPoint2.xyz , uPoint3.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-   	res2 = vec2( sdCapsule( pos , uPoint3.xyz , uPoint4.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-   	res2 = vec2( sdCapsule( pos , uPoint4.xyz , uPoint5.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-   	res2 = vec2( sdCapsule( pos , uPoint5.xyz , uPoint6.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-   	res2 = vec2( sdCapsule( pos , uPoint6.xyz , uPoint7.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-   	res2 = vec2( sdCapsule( pos , uPoint7.xyz , uPoint8.xyz , .1 ) , 2. );
-   	res = smoothU( res , res2 , .1 );
-
-
+    vec2 res =  vec2( opRepSphere( pos , vec3( .3 ) , .1 ) , 2. );
     return res;
     
 }
@@ -200,6 +154,7 @@ void main() {
     	vec3 pos = ro + rd * res.x;
     	vec3 norm = calcNormal( pos );
 
+   	 	col = vec3( -dot( norm , rd ) );// * .5 + .5;
    	 	col = vec3( -dot( norm , rd ) );// * .5 + .5;
    	}
 
