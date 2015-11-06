@@ -5,7 +5,7 @@
 
 module Main where
 
-import Game.Pal
+import Graphics.VR.Pal
 import Graphics.UI.GLFW.Pal
 import Graphics.GL.Pal
 import Graphics.GL
@@ -42,6 +42,7 @@ import Halive.Utils
 data Shapes u1 u2 = Shapes
   { _shpVoice  :: Shape u1
   , _shpMarker :: Shape u2 
+  , _shpGrid   :: Shape u2 
   }
 makeLenses ''Shapes
 
@@ -135,7 +136,8 @@ data Uniforms = Uniforms
 
 -}
 
-enableDevices :: [GamePalDevices]
+
+enableDevices :: [VRPalDevices]
 -- enableDevices = [UseOpenVR]
 --enableDevices = [UseOpenVR, UseHydra]
 enableDevices = []
@@ -143,7 +145,7 @@ enableDevices = []
 main :: IO ()
 main = do
 
-  gamePal@GamePal{..} <- reacquire 0 $ initGamePal "Volume" NoGCPerFrame enableDevices
+  vrPal@VRPal{..} <- reacquire 0 $ initVRPal "Volume" NoGCPerFrame enableDevices
 
 
   -- Set up our marker resources
@@ -158,10 +160,17 @@ main = do
   voiceShape  <- makeShape voiceGeo voiceProg--markerGeo markerProg
 
 
+      -- Set up our marker resources
+  gridProg   <- createShaderProgram "app/shaders/grid.vert" "app/shaders/grid.frag"
+  gridGeo    <- gridGeometry ( V3 10 10 10 ) ( V3 30 2 10) 
+  gridShape  <- makeShape gridGeo gridProg--markerGeo markerProg
+
+
 
 
   let shapes = Shapes{ _shpMarker = markerShape
                      , _shpVoice  = voiceShape
+                     , _shpGrid   = gridShape
                      }
 
 
@@ -283,7 +292,7 @@ main = do
 
     -- Once we have set up all the neccesary information,
     -- Render away!
-    renderWith gamePal viewMat 
+    renderWith vrPal viewMat 
       (glClear (GL_COLOR_BUFFER_BIT .|. GL_DEPTH_BUFFER_BIT))
       (render shapes )
 
@@ -317,6 +326,7 @@ render shapes projection viewMat = do
   time <- use wldTime
   let markerShape = shapes ^. shpMarker
   let voiceShape = shapes ^. shpVoice
+  let gridShape = shapes ^. shpGrid
 
   markerPose <- use wldMarker
   let markerP = markerPose ^. posPosition
@@ -336,7 +346,7 @@ render shapes projection viewMat = do
   withVAO (sVAO markerShape) $ do
     let model = mkTransformation ( Quaternion 0 (V3 0 1 0) ) markerP
 
-    drawShape model projection viewMat markerShape
+    drawShape' model projection viewMat markerShape
 
     voices <- use wldVoices
     forM_ ( zip [0..] ( Map.toList voices ) ) $ \( i , (objID, obj) ) -> do
@@ -348,7 +358,23 @@ render shapes projection viewMat = do
       forM_ ( zip [0..] ( points ) ) $ \( i , p ) -> do
         let model = mkTransformation ( Quaternion 0 (V3 0 1 0) ) (V3 (p ^. _x) (p ^. _y) (p ^. _z))
 
-        drawShape model projection viewMat markerShape
+        drawShape' model projection viewMat markerShape
+
+
+
+  {-
+
+    Render the Grid
+
+  -}
+
+  useProgram (sProgram gridShape)
+
+  withVAO (sVAO gridShape) $ do
+    let model = mkTransformation ( Quaternion 0 (V3 0 1 0) ) ( V3 0 0 0 )
+
+    drawLine model projection viewMat gridShape
+
 
 
 
@@ -394,7 +420,7 @@ render shapes projection viewMat = do
       uniformV4 uPoint8 ( ( obj ^. voxPoints ) !! 7 )-}
 
 
-      drawShape model projection viewMat voiceShape
+      drawShape' model projection viewMat voiceShape
 
 
 
@@ -405,8 +431,8 @@ render shapes projection viewMat = do
 
 -}
 
-drawShape :: MonadIO m  => M44 GLfloat -> M44 GLfloat -> M44 GLfloat ->  Shape Uniforms -> m ()
-drawShape model projection view shape = do 
+drawShape' :: MonadIO m  => M44 GLfloat -> M44 GLfloat -> M44 GLfloat ->  Shape Uniforms -> m ()
+drawShape' model projection view shape = do 
 
   let Uniforms{..} = sUniforms shape
 
@@ -416,8 +442,23 @@ drawShape model projection view shape = do
   uniformM44 uModel               model
   uniformM44 uNormalMatrix        (transpose . safeInv44 $ view !*! model )
 
-  let vc = vertCount (sGeometry shape)
+  let vc = geoVertCount (sGeometry shape)
   glDrawElements GL_TRIANGLES vc GL_UNSIGNED_INT nullPtr
+
+
+drawLine :: MonadIO m  => M44 GLfloat -> M44 GLfloat -> M44 GLfloat ->  Shape Uniforms -> m ()
+drawLine model projection view shape = do 
+
+  let Uniforms{..} = sUniforms shape
+
+  uniformM44 uViewProjection      (projection !*! view)
+  uniformM44 uModelViewProjection (projection !*! view !*! model)
+  uniformM44 uInverseModel        (fromMaybe model (inv44 model))
+  uniformM44 uModel               model
+  uniformM44 uNormalMatrix        (transpose . safeInv44 $ view !*! model )
+
+  let vc = geoVertCount (sGeometry shape)
+  glDrawElements GL_LINES vc GL_UNSIGNED_INT nullPtr
 
 
 

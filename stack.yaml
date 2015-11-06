@@ -3,7 +3,7 @@ packages:
 - '.'
 - '../gl-pal'
 - '../glfw-pal'
-- '../game-pal'
+- '../vr-pal'
 - '../hydra-hs'
 - '../oculus-mini'
 - '../halive'

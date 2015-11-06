@@ -23,10 +23,9 @@ executable volume
   main-is:             Volume.hs
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , game-pal
+                     , vr-pal
                      , glfw-pal
                      , gl-pal
-                     , game-pal
                      , gl
                      , linear-extra
                      , mtl
